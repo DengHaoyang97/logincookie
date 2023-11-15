@@ -42,119 +42,90 @@ app.use(session({
 //functions
 const matchNamePW = async (db,usn,psw) => {
    try {let result = await db.collection(collectionName_user).findOne({ "username":`${usn}`,"password":`${psw}`});
-      return result !== null; }
+   return result !== null; }
    catch (err) {
-      console.error('SomethingWrong', err);
-      return false;}}
-      
+   console.error('SomethingWrong', err);
+   return false;}} //match password and username
+
 const matchUserName = async (db,usn) => {
    try {let result = await db.collection(collectionName_user).findOne({ "username":`${usn}`});
       return result !== null; }
    catch (err) {
       console.error('SomethingWrong', err);
-      return false;}}     
-      
-
+      return false;}}  //function use to match username
 
 const createAcc=async (db,nusn,npsw)=>{
-	
 	try{
 	let result=await db.collection(collectionName_user).insertOne({"username":`${nusn}`,"password":`${npsw}`});
 	return result !== 1;}
-	
 	catch (err) {
 	      console.error('SomethingWrong', err);
-	      return false;}}
-   
- 
-   const handle_login = async (req,username,password) => {
+	      return false;}} //function use to create accounts
+    
+const handle_login = async (req,username,password) => {
    try{ 
    await openDB();
    console.log("Connected DB");
-   
    let result=await matchNamePW(db,username,password);
    if(result){
-   console.log("Wah 666");
-   
+   console.log("pw&usn matched");
    let unique=await db.collection(collectionName_user).findOne({"username":`${username}`});
    let Id=unique._id.toString();
    console.log(Id);
-   req.session.dbid=Id;
+   req.session.dbid=Id;//cookie p2
    return null;
    }
    else{
    return {Message:"Wrong Username or Password"};
-   console.log("NOTCORRECT!!!")}
- 
-   
-  }
+   console.log("NOTCORRECT!!!")}}
    catch (err){
-   console.error("Ahhhhhh!",err);
-   }
+   console.error("Ahhhhhh!",err);}
    finally{
    await closeDB(); 
-   console.log("Disconnected DB");}}
+   console.log("Disconnected DB");}} //login
  //  
    const handle_accCreate = async (username, password) => {
    try{  
    await openDB();
    console.log("Connected DB");
-   
-	let match=await matchUserName(db,username);
+        let match=await matchUserName(db,username);
 	if(match){let result=true;
 	console.log("Username used");
-	return {Message:"User Name Already Used"};
-	}
-	
+	return {Message:"User Name Already Used"};}
 	else{
    let result=await createAcc(db,username,password);
-       console.log("Wah666 Created");
+       console.log("Created666");
        return null;}}
-   
-   
    catch (err){
-   console.error("Ahhhhhh!",err);
-   }
-   finally{
-   await closeDB(); 
-   console.log("Disconnected DB");}}
-   
-   
-   
-   
+   console.error("SomthingWrong!",err);}
+   finally{await closeDB(); 
+   console.log("Disconnected DB");}}//acc create
+      
 //res req
-
 app.get('/login', (req, res) => {
    res.status(200).render('login.ejs',{Message:null});   
-  
-});
+  });
+
 app.post('/login', async(req,res) => {
    const result=await handle_login(req,req.body.username,req.body.password);
    if(result && result.Message){ res.status(200).render('login.ejs',{Message:result.Message});}
-   if(result==null){req.session.loggedIn = true;
-   res.redirect('/');}
-  
-});
+   if(result==null){req.session.loggedIn = true;//cookie p1
+   res.redirect('/');}});
 
 app.get('/', (req, res) => {
-  if (req.session.loggedIn && req.session.dbid) {
+    if (req.session.loggedIn && req.session.dbid) {
     res.status(200).render('testmainpage.ejs', { Message: null });
     console.log(req.session.dbid)
-  } else {
-    console.log("坏坏哦偷看人家~");
-    res.redirect('/login');
-  }
-});
+  } else {console.log("坏坏哦偷看人家~");
+    res.redirect('/login');}});
 
 app.get('/createaccount', (req, res) => {
-   res.status(200).render('createaccount.ejs',{Message:null});   
-  });
-  
+   res.status(200).render('createaccount.ejs',{Message:null}); });
+ 
 app.post('/createaccount', async(req, res) => {
     const result=await handle_accCreate(req.body.username,req.body.password);
     if(result && result.Message){ res.status(200).render('createaccount.ejs',{Message:result.Message});}
   });
-  
   app.get('/logout',(req,res)=>{
   req.session.loggedIn = null;
   req.session.id = null;
